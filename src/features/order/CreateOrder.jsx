@@ -2,12 +2,20 @@ import { Form, redirect, useNavigation } from "react-router-dom";
 import { createOrder } from "../../services/apiRestaurant";
 import Button from "../../ui/Button";
 import { useSelector } from "react-redux";
+import { clearCart, getCart, getTotalCartPrice } from "../cart/cartSlice";
+import { useState } from "react";
+import store from "../../store";
+import EmptyCart from "../cart/EmptyCart";
 
 export default function CreateOrder() {
-  const cart = [];
+  const [withPriority, setWithPriority] = useState(false);
+  const cart = useSelector(getCart);
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const username = useSelector((state) => state.user.username);
+  const totalCartPrice = useSelector(getTotalCartPrice);
+  const totalPrice = withPriority ? totalCartPrice * 0.2 : 0;
+  if (!cart.length) return <EmptyCart />;
   return (
     <div>
       <h1 className="my-8 text-center text-2xl font-semibold">
@@ -20,7 +28,7 @@ export default function CreateOrder() {
             <input
               className="input"
               type="text"
-              name="name"
+              name="customer"
               defaultValue={username}
               required
             />
@@ -38,6 +46,9 @@ export default function CreateOrder() {
               className="h-6 w-6 accent-yellow-400 focus:outline-none focus:ring focus:ring-yellow-400 focus:ring-offset-2"
               type="checkbox"
               name="priority"
+              id="priority"
+              value={withPriority}
+              onChange={(e) => setWithPriority(e.target.checked)}
             />
             <label className="ml-3 font-semibold">
               Want to give your order priority?
@@ -46,7 +57,9 @@ export default function CreateOrder() {
           <div>
             <input type="hidden" name="cart" value={JSON.stringify(cart)} />
             <Button disabled={isSubmitting} type="primary">
-              {isSubmitting ? "Placing order" : "Order now"}
+              {isSubmitting
+                ? "Placing order"
+                : `Order now from price: ${totalPrice}`}
             </Button>
           </div>
         </Form>
@@ -61,9 +74,13 @@ export async function action({ request }) {
   const order = {
     ...data,
     cart: JSON.parse(data.cart),
-    priority: data.priority === "on",
+    priority: data.priority === "true",
   };
-  const newOrder = createOrder(order);
+  console.log(order);
+
+  const newOrder = await createOrder(order);
+
+  store.dispatch(clearCart);
 
   return redirect(`/order/${newOrder.id}`);
 }
