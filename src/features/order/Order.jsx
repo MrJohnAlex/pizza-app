@@ -1,7 +1,15 @@
-import { useLoaderData } from "react-router-dom";
+import { useFetcher, useLoaderData } from "react-router-dom";
 import { getOrder } from "../../services/apiRestaurant";
+import { useEffect } from "react";
 export default function Order() {
   const order = useLoaderData();
+  const fetcher = useFetcher();
+  useEffect(() => {
+    if (!fetcher.data & (fetcher.state === "idle")) {
+      fetcher.load("/menu");
+    }
+  }, [fetcher]);
+
   const {
     id,
     status,
@@ -43,7 +51,14 @@ export default function Order() {
               <span className="mr-3 text-xl font-medium">
                 {item.quantity} X
               </span>
-              <h2 className="text-xl font-semibold">{item.name}</h2>
+              <div>
+                <h2 className="text-xl font-semibold">{item.name}</h2>
+                {/* <p className="text-sm capitalize italic text-stone-500">
+                  {fetcher.data
+                    .find((el) => el.id === item.id)
+                    .ingredients.join(", ")}
+                </p> */}
+              </div>
             </div>
             <div className="flex gap-3">
               <p className="text-xl font-medium">
